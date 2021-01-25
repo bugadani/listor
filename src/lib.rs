@@ -368,18 +368,7 @@ impl<T> Listor<T> {
     /// assert_eq!(None, listor.pop_back());
     /// ```
     pub fn pop_back(&mut self) -> Option<T> {
-        if let Some(tail) = self.elements.get_mut(self.tail) {
-            match std::mem::replace(&mut tail.data, Entry::Vacant) {
-                Entry::Vacant => None,
-                Entry::Occupied(item) => {
-                    self.tail = tail.prev;
-                    self.count -= 1;
-                    Some(item)
-                }
-            }
-        } else {
-            None
-        }
+        self.remove(self.tail)
     }
 
     /// Pops an element off the beginning of the list.
@@ -398,26 +387,7 @@ impl<T> Listor<T> {
     /// assert_eq!(None, listor.pop_front());
     /// ```
     pub fn pop_front(&mut self) -> Option<T> {
-        if let Some(head) = self.elements.get_mut(self.head) {
-            match std::mem::replace(&mut head.data, Entry::Vacant) {
-                Entry::Vacant => None,
-                Entry::Occupied(item) => {
-                    // if self.head != self.tail {
-                    // move popped element after tail
-                    let idx = self.head;
-                    let next_head = head.next;
-                    self.remove_node(idx);
-                    self.insert_after(idx, self.tail);
-                    self.head = next_head;
-                    //}
-
-                    self.count -= 1;
-                    Some(item)
-                }
-            }
-        } else {
-            None
-        }
+        self.remove(self.head)
     }
 
     /// Returns the number of occupied entries.
@@ -473,12 +443,17 @@ impl<T> Listor<T> {
             match std::mem::replace(&mut node.data, Entry::Vacant) {
                 Entry::Vacant => None,
                 Entry::Occupied(item) => {
-                    if idx == self.head {
-                        self.head = node.next;
+                    if self.head != self.tail {
+                        if idx == self.tail {
+                            self.tail = node.prev;
+                        } else {
+                            if idx == self.head {
+                                self.head = node.next;
+                            }
+                            self.remove_node(idx);
+                            self.insert_after(idx, self.tail);
+                        }
                     }
-
-                    self.remove_node(idx);
-                    self.insert_after(idx, self.tail);
 
                     self.count -= 1;
                     Some(item)
@@ -650,18 +625,83 @@ mod test {
         let _ = listor.push_back(5);
         let _ = listor.push_back(6);
         let idx2 = listor.push_back(7).unwrap();
-        let _ = listor.push_back(8);
 
         listor.remove(idx1);
         listor.remove(idx2);
 
-        let _ = listor.push_back(9);
+        let _ = listor.push_back(8);
 
         let mut iter = listor.iter();
 
         assert_eq!(Some(&5), iter.next());
         assert_eq!(Some(&6), iter.next());
         assert_eq!(Some(&8), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn removing_only_element() {
+        let mut listor = Listor::bounded(4);
+
+        let idx1 = listor.push_back(4).unwrap();
+
+        listor.remove(idx1);
+
+        let _ = listor.push_back(8);
+        let _ = listor.push_back(9);
+        let _ = listor.push_back(10);
+        let _ = listor.push_back(11);
+
+        let mut iter = listor.iter();
+
+        assert_eq!(Some(&8), iter.next());
+        assert_eq!(Some(&9), iter.next());
+        assert_eq!(Some(&10), iter.next());
+        assert_eq!(Some(&11), iter.next());
+        assert_eq!(None, iter.next());
+    }
+
+    #[test]
+    fn removing_middle_element() {
+        let mut listor = Listor::bounded(4);
+
+        let _ = listor.push_back(7);
+        let idx1 = listor.push_back(8).unwrap();
+
+        let _ = listor.push_back(9);
+        let _ = listor.push_back(10);
+
+        listor.remove(idx1);
+
+        let _ = listor.push_back(11);
+
+        assert_eq!(Some(7), listor.pop_front());
+        assert_eq!(Some(9), listor.pop_front());
+        assert_eq!(Some(10), listor.pop_front());
+        assert_eq!(Some(11), listor.pop_front());
+        assert_eq!(None, listor.pop_front());
+    }
+
+    #[test]
+    fn pop_front_preserves_iteration_order() {
+        let mut listor = Listor::new();
+
+        let _ = listor.push_back(4);
+        let _ = listor.push_back(5);
+        let _ = listor.push_back(6);
+        let _ = listor.push_back(7);
+        let _ = listor.push_back(8);
+
+        listor.pop_front();
+        listor.pop_front();
+        listor.pop_back();
+
+        let _ = listor.push_back(9);
+
+        let mut iter = listor.iter();
+
+        assert_eq!(Some(&6), iter.next());
+        assert_eq!(Some(&7), iter.next());
         assert_eq!(Some(&9), iter.next());
         assert_eq!(None, iter.next());
     }
