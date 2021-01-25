@@ -61,6 +61,37 @@ impl<T> Listor<T> {
         Self::create(capacity, true)
     }
 
+    /// Removes all elements from the Listor.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use listor::Listor;
+    ///
+    /// let mut listor = Listor::new();
+    ///
+    /// listor.push_back(1).unwrap();
+    /// listor.push_back(2).unwrap();
+    /// listor.push_back(3).unwrap();
+    ///
+    /// listor.clear();
+    ///
+    /// assert_eq!(0, listor.len());
+    /// ```
+    pub fn clear(&mut self) {
+        let max_next = self.elements.len() - 1;
+        for (idx, node) in self.elements.iter_mut().enumerate() {
+            *node = Node {
+                data: Entry::Vacant,
+                prev: idx.saturating_sub(1),
+                next: idx.saturating_add(1).min(max_next),
+            };
+        }
+        self.count = 0;
+        self.head = 0;
+        self.tail = 0;
+    }
+
     /// Returns the index where the next inserted item will be placed.
     ///
     /// # Example
