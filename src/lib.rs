@@ -23,6 +23,11 @@ pub struct Listor<T> {
     bounded: bool,
 }
 
+pub struct Iter<'a, T> {
+    listor: &'a Listor<T>,
+    current: usize,
+}
+
 impl<T> Default for Listor<T> {
     fn default() -> Self {
         Self::new()
@@ -539,6 +544,52 @@ impl<T> Listor<T> {
         match self.elements.get_mut(idx)?.data {
             Entry::Vacant => None,
             Entry::Occupied(ref mut element) => Some(element),
+        }
+    }
+
+    /// Iterate over the elements, from front to back.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use listor::Listor;
+    ///
+    /// let mut listor = Listor::new();
+    ///
+    /// listor.push_back(5);
+    /// listor.push_back(6);
+    ///
+    /// let mut iter = listor.iter();
+    ///
+    /// assert_eq!(Some(&5), iter.next());
+    /// assert_eq!(Some(&6), iter.next());
+    /// assert_eq!(None, iter.next());
+    /// ```
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter {
+            listor: self,
+            current: self.head,
+        }
+    }
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(node) = self.listor.elements.get(self.current) {
+            self.current = if node.next == self.current {
+                self.listor.len()
+            } else {
+                node.next
+            };
+
+            match &node.data {
+                Entry::Occupied(data) => Some(data),
+                _ => None,
+            }
+        } else {
+            None
         }
     }
 }
