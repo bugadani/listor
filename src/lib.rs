@@ -473,6 +473,10 @@ impl<T> Listor<T> {
             match std::mem::replace(&mut node.data, Entry::Vacant) {
                 Entry::Vacant => None,
                 Entry::Occupied(item) => {
+                    if idx == self.head {
+                        self.head = node.next;
+                    }
+
                     self.remove_node(idx);
                     self.insert_after(idx, self.tail);
 
@@ -636,5 +640,29 @@ mod test {
         for i in 0..4 {
             assert!(listor.get(i).is_some())
         }
+    }
+
+    #[test]
+    fn remove_preserves_iteration_order() {
+        let mut listor = Listor::new();
+
+        let idx1 = listor.push_back(4).unwrap();
+        let _ = listor.push_back(5);
+        let _ = listor.push_back(6);
+        let idx2 = listor.push_back(7).unwrap();
+        let _ = listor.push_back(8);
+
+        listor.remove(idx1);
+        listor.remove(idx2);
+
+        let _ = listor.push_back(9);
+
+        let mut iter = listor.iter();
+
+        assert_eq!(Some(&5), iter.next());
+        assert_eq!(Some(&6), iter.next());
+        assert_eq!(Some(&8), iter.next());
+        assert_eq!(Some(&9), iter.next());
+        assert_eq!(None, iter.next());
     }
 }
