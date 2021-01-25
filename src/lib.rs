@@ -480,6 +480,52 @@ impl<T> Listor<T> {
         }
     }
 
+    /// Returns a reference to the first value.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use listor::Listor;
+    ///
+    /// let mut listor = Listor::new();
+    ///
+    /// listor.push_back(5);
+    /// listor.push_back(6);
+    ///
+    /// assert_eq!(Some(&5), listor.peek_front());
+    /// assert_eq!(Some(&5), listor.peek_front());
+    ///
+    /// listor.pop_front();
+    ///
+    /// assert_eq!(Some(&6), listor.peek_front());
+    /// ```
+    pub fn peek_front(&self) -> Option<&T> {
+        self.get(self.head)
+    }
+
+    /// Returns a reference to the last value.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use listor::Listor;
+    ///
+    /// let mut listor = Listor::new();
+    ///
+    /// listor.push_back(5);
+    /// listor.push_back(6);
+    ///
+    /// assert_eq!(Some(&6), listor.peek_back());
+    /// assert_eq!(Some(&6), listor.peek_back());
+    ///
+    /// listor.pop_back();
+    ///
+    /// assert_eq!(Some(&5), listor.peek_back());
+    /// ```
+    pub fn peek_back(&self) -> Option<&T> {
+        self.get(self.tail)
+    }
+
     /// Returns a reference to the indexed value.
     pub fn get(&self, idx: usize) -> Option<&T> {
         match self.elements.get(idx)?.data {
